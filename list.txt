@@ -1,0 +1,6 @@
+Arithmetic operators: + - * / % ^
+Trigonometric functions: sin(x), cos(x), tan(x)
+Inverse ones: asin(x), acos(x), atan(x)
+Exponential and natural logarithmic: exp(x), log(x)
+Absolute value: abs(x)
+Rounding: round(x), floor(x), ceil(x)

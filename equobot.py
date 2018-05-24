@@ -3,32 +3,76 @@ import py_expression_eval as pee
 import logging
 import numpy as np
 from matplotlib import pyplot as plt
+import os
 
 
 class EquoBot:
     def __init__(self):
-        self.updater = Updater(token='574757973:AAFXdejGo4o'
-                                     'UkG-f_vVbyxTF0AA1ZYSoxNk',
-                               request_kwargs={'proxy_url':
-                                               'https://94.177.216.109:8888'})
+        """Creating command handlers"""
+        self.updater = Updater(token="574757973:AAFXdejGo4o"
+                                     "UkG-f_vVbyxTF0AA1ZYSoxNk",
+                               request_kwargs={"proxy_url":
+                                               "https://94.177.216.109:8888"})
         self.dispatcher = self.updater.dispatcher
         self.parser = pee.Parser()
 
-        start_handler = CommandHandler('start', self.start)
+        start_handler = CommandHandler("start", self.start)
         self.dispatcher.add_handler(start_handler)
 
-        help_handler = CommandHandler('help', self.help)
+        help_handler = CommandHandler("help", self.help)
         self.dispatcher.add_handler(help_handler)
 
-        plot_handler = CommandHandler('plot', self.plot)
-        self.dispatcher.add_handler(plot_handler)
-
-        list_handler = CommandHandler('list', self.list)
+        list_handler = CommandHandler("list", self.list)
         self.dispatcher.add_handler(list_handler)
 
+        plot_handler = CommandHandler("plot", self.plot)
+        self.dispatcher.add_handler(plot_handler)
+
+        last_handler = CommandHandler("last", self.last)
+        self.dispatcher.add_handler(last_handler)
+
+        clear_handler = CommandHandler("clear", self.clear)
+        self.dispatcher.add_handler(clear_handler)
+
+    def get_text(self, filename):
+        """Retrieve text from a file"""
+        f = open(filename, "r")
+        s = ""
+        for line in f:
+            s += line
+        return s
+
+    def invalid_format(self, bot, id):
+        """In case the user entered something wrong ¯\_(ツ)_/¯"""
+        bot.send_message(chat_id=id, text="Invalid format")
+
     def start(self, bot, update):
-        update.message.reply_text('I can draw graphs of certain functions. '
-                                  'Type /help for help.')
+        update.message.reply_text(self.get_text("start.txt"))
+
+    def help(self, bot, update):
+        update.message.reply_text(self.get_text("help.txt"))
+
+    def list(self, bot, update):
+        """List functions, combinations of which can be plotted"""
+        update.message.reply_text(self.get_text("list.txt"))
+
+    def save_query(self, id, query):
+        id = str(id)
+        if id not in os.listdir("history"):
+            os.chdir("history")
+            os.system("touch {}".format(id))
+            os.chdir("..")
+        with open("history/{}".format(id), "a") as file:
+            file.write(query + '\n')
+
+    def clear(self, bot, update):
+        """Clear query history for a particular user"""
+        id = str(update.message.chat_id)
+        if id in os.listdir("history"):
+            os.remove("history/{}".format(id))
+            bot.send_message(chat_id=id, text="History cleared")
+        else:
+            bot.send_message(chat_id=id, text="No items to clear")
 
     def plot(self, bot, update):
         try:
@@ -40,38 +84,38 @@ class EquoBot:
             for expression in args[4:]:
                 def func(x):
                     return self.parser.parse(expression).evaluate({'x': x})
-
                 # allowing it to accept a vector
                 func = np.vectorize(func)
                 x = np.linspace(left, right, precision)
                 plt.plot(x, func(x))
-            plt.savefig('plot.png')
+                self.save_query(update.message.chat_id, expression)
+            plt.savefig("plot.png")
             plt.clf()
             bot.send_photo(chat_id=update.message.chat_id,
-                           photo=open('plot.png', 'rb'))
-        except ValueError:
-            print('failed')
-            update.message.reply_text('Invalid format')
+                           photo=open("plot.png", "rb"))
+            os.remove("plot.png")
+        except Exception:
+            self.invalid_format(bot, update.message.chat_id)
 
-    def help(self, bot, update):
-        update.message.reply_text("""
-use /plot to draw a graph:
-/plot <left border> <right border> <number of points to build on>
-<expression> <expression> ... <expression>
-Do not use whitespaces inside expressions.
-
-use /list to get the list of available functions
-        """)
-
-    def list(self, bot, update):
-        update.message.reply_text("""
-Arithmetic operators: + - * / % ^
-Trigonometric functions: sin(x), cos(x), tan(x)
-Inverse ones: asin(x), acos(x), atan(x)
-Exponential and natural logarithmic: exp(x), log(x)
-Absolute value: abs(x)
-Round: round(x), floor(x), ceil(x)
-        """)
+    def last(self, bot, update):
+        """Retrieve last n queries done by a particular user"""
+        id = str(update.message.chat_id)
+        try:
+            reply = ""
+            n = int(update.message.text.split()[1])
+            if id not in os.listdir("history"):
+                update.message.reply_text("No recent queries")
+            else:
+                queries = open("history/{}".format(id), "r").readlines()
+                size = len(queries)
+                if size < n:
+                    reply = "only {} saved queries exist:\n".format(size)
+                    n = size
+                for i in range(n):
+                    reply += queries[len(queries) - n + i]
+                update.message.reply_text(reply)
+        except Exception:
+            self.invalid_format(bot, update.message.chat_id)
 
 
 if __name__ == '__main__':

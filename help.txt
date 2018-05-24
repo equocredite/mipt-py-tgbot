@@ -1,0 +1,9 @@
+/plot - draw a graph:
+
+/plot <left border> <right border> <number of points>
+<expression> ... <expression>
+Do not use whitespaces inside expressions.
+
+/list - get the list of available functions
+/last <n> - show last n queries
+/clear - clear query history
