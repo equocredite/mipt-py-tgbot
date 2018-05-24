@@ -1,6 +1,6 @@
 /plot - draw a graph:
 
-/plot <left border> <right border> <number of points>
+/plot <left border> <right border> <precision (number of points)>
 <expression> ... <expression>
 Do not use whitespaces inside expressions.
 

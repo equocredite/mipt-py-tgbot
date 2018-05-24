@@ -44,6 +44,7 @@ class EquoBot:
 
     def invalid_format(self, bot, id):
         """In case the user entered something wrong ¯\_(ツ)_/¯"""
+        print("failed")
         bot.send_message(chat_id=id, text="Invalid format")
 
     def start(self, bot, update):
@@ -87,14 +88,16 @@ class EquoBot:
                 # allowing it to accept a vector
                 func = np.vectorize(func)
                 x = np.linspace(left, right, precision)
-                plt.plot(x, func(x))
+                plt.plot(x, func(x), label=expression)
                 self.save_query(update.message.chat_id, expression)
+            plt.legend(loc="best")
             plt.savefig("plot.png")
-            plt.clf()
             bot.send_photo(chat_id=update.message.chat_id,
                            photo=open("plot.png", "rb"))
+            plt.clf()
             os.remove("plot.png")
         except Exception:
+            plt.clf()
             self.invalid_format(bot, update.message.chat_id)
 
     def last(self, bot, update):
@@ -104,7 +107,7 @@ class EquoBot:
             reply = ""
             n = int(update.message.text.split()[1])
             if id not in os.listdir("history"):
-                update.message.reply_text("No recent queries")
+                update.message.reply_text("No recent queries.")
             else:
                 queries = open("history/{}".format(id), "r").readlines()
                 size = len(queries)
